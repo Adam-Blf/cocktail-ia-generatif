@@ -1,0 +1,35 @@
+# Core NLP
+sentence-transformers==2.7.0
+transformers==4.40.0
+torch==2.3.0
+
+# Retrieval
+faiss-cpu==1.8.0
+
+# Data
+pandas==2.2.2
+numpy==1.26.4
+scikit-learn==1.4.2
+
+# Visualisation
+matplotlib==3.8.4
+seaborn==0.13.2
+plotly==5.22.0
+wordcloud==1.9.3
+
+# Evaluation
+rouge-score==0.1.2
+nltk==3.8.1
+
+# UI
+streamlit==1.35.0
+
+# Utils
+tqdm==4.66.4
+python-dotenv==1.0.1
+kaggle==1.6.14
+fpdf2==2.7.9
+
+# Tests
+pytest==8.2.0
+pytest-cov==5.0.0
