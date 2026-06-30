@@ -171,15 +171,20 @@ def build_ingredient_index(df: pd.DataFrame) -> None:
 
 
 def try_kaggle_downloads() -> None:
-    """Tente de telecharger les datasets Kaggle si credentials presents."""
-    try:
-        from kaggle.api.kaggle_api_extended import KaggleApiExtended
-        api = KaggleApiExtended()
-        api.authenticate()
-        log.info("Kaggle auth OK")
-    except Exception as exc:
-        log.info("Kaggle not available (%s) - skip.", exc)
+    """Tente de telecharger les datasets Kaggle si credentials presents (Kaggle CLI v2+)."""
+    import subprocess
+    import shutil
+
+    if not shutil.which("kaggle"):
+        log.info("Kaggle CLI not found - skip.")
         return
+
+    # Verify auth by listing datasets (fast no-op)
+    check = subprocess.run(["kaggle", "datasets", "list", "--max-size", "1"], capture_output=True, text=True)
+    if check.returncode != 0:
+        log.info("Kaggle auth not valid - skip. Run: kaggle auth login")
+        return
+    log.info("Kaggle auth OK")
 
     datasets = [
         ("aadyasingh55", "cocktails"),
@@ -194,13 +199,22 @@ def try_kaggle_downloads() -> None:
         dest = DATA_RAW / f"kaggle_{ds.replace('-', '_')}"
         dest.mkdir(exist_ok=True)
         try:
-            api.dataset_download_files(f"{owner}/{ds}", path=str(dest), unzip=True, quiet=False)
+            result = subprocess.run(
+                ["kaggle", "datasets", "download", f"{owner}/{ds}", "--unzip", "--path", str(dest)],
+                capture_output=True, text=True, timeout=120,
+            )
+            if result.returncode != 0:
+                log.warning("  Kaggle %s/%s failed: %s", owner, ds, result.stderr.strip())
+                continue
             log.info("  Kaggle %s/%s -> %s", owner, ds, dest.name)
             for f in dest.glob("*.csv"):
-                df_k = pd.read_csv(f, on_bad_lines="skip")
-                out_parquet = DATA_RAW / f"kaggle_{ds.replace('-', '_')}.parquet"
-                df_k.to_parquet(out_parquet, index=False)
-                log.info("    converted -> %s", out_parquet.name)
+                try:
+                    df_k = pd.read_csv(f, on_bad_lines="skip")
+                    out_parquet = DATA_RAW / f"kaggle_{ds.replace('-', '_')}.parquet"
+                    df_k.to_parquet(out_parquet, index=False)
+                    log.info("    converted -> %s  (%d rows)", out_parquet.name, len(df_k))
+                except Exception as exc:
+                    log.warning("    CSV parse failed %s: %s", f.name, exc)
         except Exception as exc:
             log.warning("  Kaggle %s/%s failed: %s", owner, ds, exc)
 
