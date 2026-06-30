@@ -26,49 +26,401 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ---------- CSS EFREI branding ----------
+# ---------- CSS MixCraft premium ----------
 st.markdown("""
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
   :root {
-    --efrei-navy: #163767;
-    --efrei-pink: #FF43B8;
-    --efrei-dark: #051832;
-    --efrei-blue: #0C78B4;
+    --navy:   #163767;
+    --pink:   #FF43B8;
+    --dark:   #051832;
+    --blue:   #0C78B4;
+    --glass:  rgba(255,255,255,0.76);
+    --shadow: 0 8px 32px rgba(22,55,103,0.11);
+    --radius: 16px;
   }
-  .stApp { background-color: #f8f9fc; }
-  h1, h2, h3 { color: var(--efrei-navy); font-family: 'Helvetica Neue', sans-serif; }
-  .metric-card {
-    background: white;
-    border-left: 4px solid var(--efrei-blue);
-    border-radius: 8px;
-    padding: 1rem;
-    margin: 0.5rem 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+
+  /* ---- Base ---- */
+  .stApp {
+    background: linear-gradient(145deg, #f0f4ff 0%, #faf0ff 55%, #f0f8ff 100%) !important;
+    font-family: 'Inter', 'Helvetica Neue', sans-serif !important;
   }
+  .main .block-container {
+    padding-top: 1.5rem !important;
+    max-width: 1100px !important;
+  }
+
+  /* ---- Typography - force contrast partout ---- */
+  h1, h2, h3, h4 {
+    color: var(--navy) !important;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: -0.025em !important;
+  }
+  h3 { font-weight: 700 !important; font-size: 1.25rem !important; }
+  h4 { font-weight: 600 !important; }
+
+  /* Texte Streamlit genere uniquement (pas les divs custom HTML) */
+  .stMarkdown p, .stMarkdown li, .stMarkdown strong, .stMarkdown em,
+  [data-testid="stMarkdownContainer"] p,
+  [data-testid="stMarkdownContainer"] li,
+  [data-testid="stText"] {
+    font-family: 'Inter', sans-serif !important;
+    color: #1e2a3a !important;
+  }
+  .stMarkdown strong { color: var(--navy) !important; font-weight: 700 !important; }
+
+  /* Caption / helper text */
+  [data-testid="stCaptionContainer"] p,
+  [data-testid="stCaptionContainer"] {
+    color: #4a5568 !important;
+    font-size: 0.82rem !important;
+  }
+
+  /* Placeholder */
+  ::placeholder { color: #8fa3bf !important; opacity: 1 !important; }
+  ::-webkit-input-placeholder { color: #8fa3bf !important; }
+  ::-moz-placeholder { color: #8fa3bf !important; }
+
+  /* ---- Custom scrollbar ---- */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--navy), var(--blue));
+    border-radius: 99px;
+  }
+
+  /* ---- Sidebar ---- */
+  [data-testid="stSidebar"] {
+    background: linear-gradient(180deg, var(--dark) 0%, #0d2545 100%) !important;
+  }
+  [data-testid="stSidebar"] * { color: rgba(255,255,255,0.87) !important; }
+
+  /* ---- Tabs - pill style ---- */
+  [data-testid="stTabs"] [role="tablist"] {
+    gap: 6px !important;
+    background: rgba(255,255,255,0.82) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(22,55,103,0.14) !important;
+    border-radius: 12px !important;
+    padding: 4px !important;
+    width: fit-content !important;
+    box-shadow: 0 2px 12px rgba(22,55,103,0.07) !important;
+  }
+  [data-testid="stTabs"] [role="tab"] {
+    border-radius: 8px !important;
+    padding: 7px 24px !important;
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    color: #2d3748 !important;
+    border: none !important;
+    background: transparent !important;
+    transition: all 0.2s ease !important;
+    font-family: 'Inter', sans-serif !important;
+    border-bottom: none !important;
+  }
+  [data-testid="stTabs"] [role="tab"] p {
+    color: inherit !important;
+    font-weight: inherit !important;
+  }
+  [data-testid="stTabs"] [role="tab"]:hover {
+    background: rgba(22,55,103,0.07) !important;
+    color: var(--navy) !important;
+  }
+  [data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 14px rgba(22,55,103,0.3) !important;
+  }
+  [data-testid="stTabs"] [role="tab"][aria-selected="true"] p {
+    color: #fff !important;
+  }
+  /* Supprimer l'indicateur rouge/soulignement Streamlit */
+  [data-testid="stTabs"] [role="tab"]::after,
+  [data-testid="stTabs"] [role="tab"]::before { display: none !important; }
+  [data-baseweb="tab-highlight"],
+  [data-baseweb="tab-border"] {
+    display: none !important;
+    background: transparent !important;
+    height: 0 !important;
+  }
+  /* Conteneur des tabs sans border bottom */
+  [data-testid="stTabs"] > div:first-child {
+    border-bottom: none !important;
+  }
+
+  /* ---- Inputs ---- */
+  .stTextInput input, .stTextArea textarea {
+    border-radius: 10px !important;
+    border: 1.5px solid rgba(22,55,103,0.16) !important;
+    background: var(--glass) !important;
+    backdrop-filter: blur(8px) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.9rem !important;
+    color: var(--dark) !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+    padding: 10px 14px !important;
+  }
+  .stTextInput input:focus, .stTextArea textarea:focus {
+    border-color: var(--navy) !important;
+    box-shadow: 0 0 0 3px rgba(22,55,103,0.1) !important;
+    outline: none !important;
+  }
+  .stTextInput label, .stTextArea label,
+  .stSelectbox label, .stSlider label,
+  .stCheckbox label, .stRadio label {
+    font-weight: 600 !important;
+    color: var(--navy) !important;
+    font-size: 0.83rem !important;
+    letter-spacing: 0.02em !important;
+    font-family: 'Inter', sans-serif !important;
+  }
+  /* Help text sous les inputs */
+  .stTextInput [data-testid="InputInstructions"],
+  .stTextArea [data-testid="InputInstructions"] {
+    color: #5a7090 !important;
+    font-size: 0.78rem !important;
+  }
+
+  /* ---- Selectbox ---- */
+  [data-testid="stSelectbox"] > div > div {
+    border-radius: 10px !important;
+    border: 1.5px solid rgba(22,55,103,0.16) !important;
+    background: rgba(255,255,255,0.9) !important;
+    color: #1e2a3a !important;
+  }
+  /* Dropdown options */
+  [data-testid="stSelectbox"] li,
+  [data-testid="stSelectbox"] [role="option"] {
+    color: #1e2a3a !important;
+    background: white !important;
+  }
+  [data-testid="stSelectbox"] [role="option"]:hover {
+    background: rgba(22,55,103,0.07) !important;
+  }
+  /* Valeur selectionnee */
+  [data-testid="stSelectbox"] > div > div > div {
+    color: #1e2a3a !important;
+  }
+
+  /* ---- Slider - override Streamlit rouge -> navy ---- */
+  /* Thumb */
+  [data-testid="stSlider"] [role="slider"] {
+    background: var(--navy) !important;
+    border-color: var(--navy) !important;
+    box-shadow: 0 0 0 3px rgba(22,55,103,0.2) !important;
+  }
+  /* Track entier */
+  [data-testid="stSlider"] [data-baseweb="slider"] > div {
+    background: rgba(22,55,103,0.12) !important;
+  }
+  /* Portion remplie (filled track) */
+  [data-testid="stSlider"] [data-baseweb="slider-inner-track"],
+  [data-testid="stSlider"] [data-baseweb="slider"] > div > div,
+  [data-testid="stSlider"] [data-baseweb="slider-track-fill"] {
+    background: linear-gradient(90deg, var(--navy), var(--blue)) !important;
+  }
+  /* Forcer override sur toutes les couleurs Streamlit rouge (--primary-color) */
+  [data-testid="stSlider"] * {
+    --primary-color: #163767 !important;
+  }
+
+  /* ---- Checkbox ---- */
+  .stCheckbox [data-testid="stCheckbox"] span {
+    color: #1e2a3a !important;
+  }
+
+  /* ---- Primary button ---- */
+  button[kind="primary"] {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 10px 28px !important;
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    letter-spacing: 0.02em !important;
+    box-shadow: 0 4px 16px rgba(22,55,103,0.28) !important;
+    transition: transform 0.15s, box-shadow 0.15s !important;
+    font-family: 'Inter', sans-serif !important;
+  }
+  button[kind="primary"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(22,55,103,0.38) !important;
+  }
+  button[kind="secondary"] {
+    border-radius: 10px !important;
+    border: 1.5px solid rgba(22,55,103,0.3) !important;
+    color: var(--navy) !important;
+    font-weight: 500 !important;
+    background: var(--glass) !important;
+    font-family: 'Inter', sans-serif !important;
+  }
+
+  /* ---- Cocktail result cards ---- */
   .cocktail-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.2rem;
-    margin: 0.5rem 0;
-    border: 1px solid #e8edf5;
-    box-shadow: 0 2px 6px rgba(22,55,103,0.08);
+    background: var(--glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--radius);
+    padding: 1.4rem 1.6rem;
+    margin: 0.75rem 0;
+    border: 1px solid rgba(22,55,103,0.1);
+    box-shadow: var(--shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
   }
+  .cocktail-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--navy), var(--blue), var(--pink));
+  }
+  .cocktail-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 40px rgba(22,55,103,0.17);
+  }
+
+  /* ---- Score badge ---- */
   .score-badge {
-    background: var(--efrei-navy);
-    color: white;
-    border-radius: 20px;
-    padding: 2px 10px;
-    font-size: 0.85rem;
+    background: linear-gradient(135deg, var(--navy), var(--blue));
+    color: #fff;
+    border-radius: 99px;
+    padding: 4px 14px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    box-shadow: 0 2px 8px rgba(22,55,103,0.25);
+    font-family: 'Inter', sans-serif;
   }
+
+  /* ---- Category tags ---- */
   .tag {
-    background: #e8f0fe;
-    color: var(--efrei-navy);
-    border-radius: 4px;
-    padding: 2px 8px;
-    font-size: 0.8rem;
-    margin: 2px;
+    background: linear-gradient(135deg, rgba(22,55,103,0.08), rgba(12,120,180,0.08));
+    color: var(--navy);
+    border: 1px solid rgba(22,55,103,0.18);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    margin: 3px 2px;
     display: inline-block;
+    letter-spacing: 0.03em;
+    font-family: 'Inter', sans-serif;
   }
+
+  /* ---- Metric card ---- */
+  .metric-card {
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--radius);
+    padding: 1.2rem 1.4rem;
+    margin: 0.5rem 0;
+    border: 1px solid rgba(22,55,103,0.1);
+    box-shadow: var(--shadow);
+    position: relative;
+    padding-left: 1.8rem;
+    overflow: hidden;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--blue), var(--navy));
+    border-radius: 4px 0 0 4px;
+  }
+
+  /* ---- Recipe card (generation result) ---- */
+  .recipe-card {
+    background: var(--glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-left: 4px solid var(--pink);
+    border-radius: var(--radius);
+    padding: 1.4rem 1.6rem;
+    margin: 1rem 0;
+    box-shadow: 0 4px 20px rgba(255,67,184,0.1);
+    line-height: 1.75;
+    font-size: 0.92rem;
+  }
+
+  /* ---- Dividers ---- */
+  hr {
+    border: none !important;
+    height: 1px !important;
+    background: linear-gradient(90deg, transparent, rgba(22,55,103,0.14), transparent) !important;
+    margin: 1.5rem 0 !important;
+  }
+
+  /* ---- Alerts ---- */
+  [data-testid="stAlert"] {
+    border-radius: 12px !important;
+  }
+
+  /* ---- Dataframe ---- */
+  [data-testid="stDataFrame"] {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    box-shadow: var(--shadow) !important;
+  }
+
+  /* ---- Expander ---- */
+  [data-testid="stExpander"] {
+    border-radius: 12px !important;
+    border: 1px solid rgba(22,55,103,0.1) !important;
+    background: rgba(255,255,255,0.85) !important;
+    backdrop-filter: blur(8px) !important;
+    overflow: hidden !important;
+  }
+  [data-testid="stExpander"] summary {
+    font-weight: 500 !important;
+    color: var(--navy) !important;
+    font-family: 'Inter', sans-serif !important;
+  }
+  [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+    background: rgba(255,255,255,0.9) !important;
+  }
+
+  /* ---- Streamlit header toolbar (cacher le badge FREE) ---- */
+  [data-testid="stToolbar"],
+  [data-testid="stDecoration"],
+  #MainMenu,
+  header[data-testid="stHeader"] { visibility: hidden !important; }
+
+  /* ---- Streamlit Markdown text contrast ---- */
+  .stApp .stMarkdown > div > p {
+    color: #374151 !important;
+    font-size: 0.93rem !important;
+    line-height: 1.6 !important;
+  }
+  .stApp .stMarkdown strong, .stApp .stMarkdown b { color: var(--navy) !important; }
+
+  /* ---- Protection du header custom (mc-header) ---- */
+  /* Toutes les regles !important du stMarkdown sont annulees a l'interieur du header */
+  .mc-header, .mc-header p, .mc-header span, .mc-header h1,
+  .mc-header div, .mc-header strong {
+    color: inherit !important;
+    font-family: 'Inter', sans-serif !important;
+  }
+  .mc-header p { color: rgba(255,255,255,0.88) !important; }
+  .mc-header h1 { color: #fff !important; }
+
+  /* ---- Fond de page main area (toujours visible) ---- */
+  [data-testid="stAppViewContainer"] > section.main {
+    background: transparent !important;
+  }
+  [data-testid="stAppViewContainer"] {
+    background: linear-gradient(145deg, #eef2ff 0%, #faf0ff 55%, #eff8ff 100%) !important;
+  }
+
+  /* ---- Supprime le spinner "Made with Streamlit" ---- */
+  .viewerBadge_container__r5tak,
+  [data-testid="stStatusWidget"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -113,15 +465,83 @@ def radar_chart(flavor_profile: dict, cocktail_name: str) -> go.Figure:
 
 # ---------- Header ----------
 st.markdown("""
-<div style="background: linear-gradient(135deg, #163767 0%, #0C78B4 100%);
-            padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;">
-  <h1 style="color: white; margin: 0; font-size: 2rem;">MixCraft AI</h1>
-  <p style="color: rgba(255,255,255,0.85); margin: 0.5rem 0 0 0;">
-    Recommandation et creation de cocktails par analyse semantique
-  </p>
-  <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin: 0.5rem 0 0 0;">
-    EFREI Paris - M1 Data Engineering & IA - Adam Beloucif & Emilien Morice
-  </p>
+<div class="mc-header" style="
+  background: linear-gradient(135deg, #051832 0%, #163767 45%, #0C78B4 100%);
+  padding: 2.5rem 2.4rem;
+  border-radius: 20px;
+  margin-bottom: 1.8rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 48px rgba(5,24,50,0.3);
+">
+  <!-- decorative blobs -->
+  <div style="
+    position: absolute; top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(255,67,184,0.22) 0%, transparent 70%);
+    border-radius: 50%;
+  "></div>
+  <div style="
+    position: absolute; bottom: -30px; left: 30%;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(12,120,180,0.28) 0%, transparent 70%);
+    border-radius: 50%;
+  "></div>
+
+  <div style="position: relative; z-index: 1;">
+    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 0.6rem;">
+      <span style="font-size: 2.2rem; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));">&#127379;</span>
+      <h1 style="
+        color: #fff;
+        margin: 0;
+        font-size: 2.1rem;
+        font-weight: 800;
+        font-family: 'Inter', sans-serif;
+        letter-spacing: -0.04em;
+      ">MixCraft <span style="
+        background: linear-gradient(90deg, #FF43B8, #0C78B4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      ">AI</span></h1>
+    </div>
+    <p style="
+      color: rgba(255,255,255,0.88);
+      margin: 0 0 0.3rem 0;
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    ">Recommandation et creation de cocktails par analyse semantique</p>
+    <div style="display: flex; align-items: center; gap: 8px; margin-top: 0.8rem; flex-wrap: wrap;">
+      <span style="
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: rgba(255,255,255,0.75);
+        border-radius: 99px;
+        padding: 3px 12px;
+        font-size: 0.75rem;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+      ">EFREI Paris</span>
+      <span style="
+        background: rgba(255,67,184,0.18);
+        border: 1px solid rgba(255,67,184,0.3);
+        color: rgba(255,255,255,0.8);
+        border-radius: 99px;
+        padding: 3px 12px;
+        font-size: 0.75rem;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+      ">M1 Data Engineering & IA</span>
+      <span style="
+        color: rgba(255,255,255,0.45);
+        font-size: 0.75rem;
+        font-family: 'Inter', sans-serif;
+      ">Adam Beloucif &amp; Emilien Morice</span>
+    </div>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -244,9 +664,7 @@ with tab_gen:
                 if result.get("generated_recipe"):
                     st.markdown("#### Recette generee")
                     st.markdown(f"""
-                    <div style="background: white; border-left: 4px solid #FF43B8;
-                                border-radius: 8px; padding: 1.2rem; margin: 1rem 0;
-                                box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                    <div class="recipe-card">
                     {result['generated_recipe'].replace(chr(10), '<br>')}
                     </div>
                     """, unsafe_allow_html=True)
