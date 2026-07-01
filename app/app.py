@@ -13,10 +13,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
 
-from src.data_loader import load_all_datasets
-from src.embeddings import EmbeddingEngine
-from src.recommender import CocktailRecommender
-from src.rag_pipeline import RAGPipeline
+from src import load_all_datasets, EmbeddingEngine, CocktailRecommender, RAGPipeline
 
 # ---------- Page config ----------
 st.set_page_config(
