@@ -16,6 +16,7 @@ import pandas as pd
 
 from .embeddings import EmbeddingEngine
 from .recommender import CocktailRecommender
+from .translator import QueryTranslator
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +29,12 @@ class RAGPipeline:
     Pipeline RAG pour la creation et recommandation de cocktails.
 
     Etapes :
-    1. Guardrail semantique : verifier que la requete est dans le domaine cocktails.
-    2. Retrieval FAISS : recuperer les K cocktails les plus similaires.
-    3. Construction du contexte : injecter les recettes retrievees dans le prompt.
-    4. Generation : appeler le modele generatif avec le contexte.
-    5. Cache MD5 : eviter les appels redondants.
+    1. Traduction EN : normalise la requete vers l'anglais (SBERT est anglophone).
+    2. Guardrail semantique : verifier que la requete est dans le domaine cocktails.
+    3. Retrieval FAISS : recuperer les K cocktails les plus similaires.
+    4. Construction du contexte : injecter les recettes retrievees dans le prompt.
+    5. Generation : appeler le modele generatif avec le contexte.
+    6. Cache MD5 : eviter les appels redondants.
     """
 
     def __init__(
@@ -40,10 +42,13 @@ class RAGPipeline:
         recommender: CocktailRecommender,
         engine: Optional[EmbeddingEngine] = None,
         guardrail_threshold: float = GUARDRAIL_THRESHOLD,
+        translate_queries: bool = True,
     ):
         self.recommender = recommender
         self.engine = engine or recommender.engine
         self.guardrail_threshold = guardrail_threshold
+        # Traducteur EN : ameliore le recall SBERT sur les requetes non-anglaises
+        self.translator = QueryTranslator(enabled=translate_queries)
         self._cache: dict[str, str] = self._load_cache()
 
     def query(
@@ -57,16 +62,20 @@ class RAGPipeline:
         Traite une requete utilisateur de bout en bout.
 
         Args:
-            user_query: Requete en langage naturel.
+            user_query: Requete en langage naturel (FR, EN, ES, etc.).
             top_k: Nombre de cocktails a recuperer pour le contexte.
             temperature: Temperature de generation (creativite).
             generate: Si False, retourne seulement le retrieval sans generation.
 
         Returns:
-            Dict avec les cles : status, retrieved_cocktails, generated_recipe, cached.
+            Dict avec les cles : status, retrieved_cocktails, generated_recipe,
+            cached, original_query, translated_query.
         """
-        # Guardrail
-        guardrail_result = self._check_guardrail(user_query)
+        # Etape 1 : normalisation vers l'anglais pour SBERT
+        en_query, was_translated = self.translator.to_english(user_query)
+
+        # Guardrail sur la requete traduite (meilleure precision)
+        guardrail_result = self._check_guardrail(en_query)
         if not guardrail_result["pass"]:
             return {
                 "status": "rejected",
@@ -75,9 +84,11 @@ class RAGPipeline:
                 "retrieved_cocktails": [],
                 "generated_recipe": None,
                 "cached": False,
+                "original_query": user_query,
+                "translated_query": en_query if was_translated else None,
             }
 
-        # Cache check
+        # Cache check sur la requete originale (stable entre sessions)
         cache_key = self._md5(user_query + str(top_k))
         if cache_key in self._cache:
             logger.debug("RAG cache hit : %s", cache_key[:8])
@@ -87,10 +98,12 @@ class RAGPipeline:
                 "generated_recipe": self._cache[cache_key],
                 "cached": True,
                 "max_similarity": guardrail_result["max_similarity"],
+                "original_query": user_query,
+                "translated_query": en_query if was_translated else None,
             }
 
-        # Retrieval
-        results = self.recommender.recommend_by_query(user_query, top_k=top_k)
+        # Retrieval sur la requete traduite EN pour maximiser le recall SBERT
+        results = self.recommender.recommend_by_query(en_query, top_k=top_k)
 
         if not generate:
             return {
@@ -99,15 +112,17 @@ class RAGPipeline:
                 "generated_recipe": None,
                 "cached": False,
                 "max_similarity": guardrail_result["max_similarity"],
+                "original_query": user_query,
+                "translated_query": en_query if was_translated else None,
             }
 
         # Construction du contexte
         context = self._build_context(results)
 
-        # Generation
-        generated = self._generate(user_query, context, temperature)
+        # Generation avec la requete EN pour le prompt GPT-2 (corpus anglophone)
+        generated = self._generate(en_query, context, temperature)
 
-        # Mise en cache
+        # Mise en cache (cle = requete originale pour stabilite multi-langue)
         self._cache[cache_key] = generated
         self._save_cache()
 
@@ -117,6 +132,8 @@ class RAGPipeline:
             "generated_recipe": generated,
             "cached": False,
             "max_similarity": guardrail_result["max_similarity"],
+            "original_query": user_query,
+            "translated_query": en_query if was_translated else None,
         }
 
     def _check_guardrail(self, query: str) -> dict:
