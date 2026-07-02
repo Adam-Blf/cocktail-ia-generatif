@@ -49,16 +49,17 @@ Chaque section repond a une question type jury avec les references exactes fichi
 
 ---
 
-## 4. GENERATION - GPT-2 Fine-tune
+## 4. GENERATION - Gemini API (RAG Pipeline)
 
 | Question jury | Fichier | Ligne | Detail |
 |---|---|---|---|
-| "Quel modele generatif utilisez-vous ?" | `src/rag/generator.py` | 15 | `MODEL_DIR = models/gpt2-cocktails` (GPT-2 fine-tune) |
-| "Comment vous avez fait le fine-tuning ?" | `src/rag/generator.py` | 39-122 | `train()` : HuggingFace Trainer, 3 epochs, batch 8, lr 5e-5 |
-| "Sur combien de recettes ?" | `src/rag/generator.py` | 110 | Log "Debut du fine-tuning GPT-2 (N textes, 3 epochs)" -> 447 recettes |
-| "Comment vous generez une recette ?" | `src/rag/generator.py` | 124-160 | `generate()` : prompt "Recette avec X : Nom : " + top_p sampling |
-| "Vous evaluez la generation ?" | `src/rag/generator.py` | 175-209 | `evaluate_generation` : BLEU-4 + ROUGE-L |
-| "Fallback si le modele n'est pas dispo ?" | `src/rag/generator.py` | 162-167 | `_load_pipeline` : fallback sur gpt2 base si fine-tune absent |
+| "Quel modele generatif utilisez-vous ?" | `src/rag/rag_pipeline.py` | 219 | `gemini-1.5-flash` via Google AI API (internet requis) |
+| "Pourquoi Gemini plutot qu'un modele local ?" | `src/rag/rag_pipeline.py` | 186-239 | Qualite superieure, zero latence de chargement, 400 tokens en ~1s |
+| "Comment vous passez le contexte RAG ?" | `src/rag/rag_pipeline.py` | 223-232 | Prompt structuré : cocktails retrieved + requete + format attendu |
+| "La temperature est parametrable ?" | `src/rag/rag_pipeline.py` | 234-237 | `GenerationConfig(temperature=temperature, max_output_tokens=400)` |
+| "Le modele est recharge a chaque appel ?" | `src/rag/rag_pipeline.py` | 217-219 | Non : singleton `_generation_model_cache["gemini"]`, lazy-init unique |
+| "Fallback si l'API est indispo ?" | `src/rag/rag_pipeline.py` | 175-184 | `_generate_template` : recette structuree depuis le contexte, sans API |
+| "Vous evaluez la generation ?" | `src/rag/generator.py` | 175-209 | `evaluate_generation` : BLEU-4 + ROUGE-L (module d'evaluation independant) |
 
 ---
 

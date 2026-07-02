@@ -20,8 +20,18 @@ from ..nlp.translator import QueryTranslator
 
 logger = logging.getLogger(__name__)
 
-CACHE_PATH = Path(__file__).parent.parent / ".cache" / "rag_cache.json"
+# Cache des generations a la racine projet (meme dossier .cache que les
+# embeddings). rag_pipeline.py vit dans src/rag/, 3 niveaux sous la racine.
+CACHE_PATH = Path(__file__).resolve().parent.parent.parent / ".cache" / "rag_cache.json"
 GUARDRAIL_THRESHOLD = 0.40
+
+# Modele Gemini utilise pour la generation (rapide, ~1s pour 400 tokens)
+GEMINI_MODEL = "gemini-2.5-flash"
+
+# Singleton process-level du client Gemini : initialise une fois par processus
+# lors du premier appel a _generate_with_model, reutilise ensuite.
+# Evite de recreer le client (et de relire la cle API) a chaque requete.
+_generation_client_cache: dict = {}
 
 
 class RAGPipeline:
@@ -119,7 +129,7 @@ class RAGPipeline:
         # Construction du contexte
         context = self._build_context(results)
 
-        # Generation avec la requete EN pour le prompt GPT-2 (corpus anglophone)
+        # Generation avec la requete EN (SBERT est anglophone, meilleure qualite prompt)
         generated = self._generate(en_query, context, temperature)
 
         # Mise en cache (cle = requete originale pour stabilite multi-langue)
@@ -168,27 +178,82 @@ class RAGPipeline:
 
     def _generate(self, query: str, context: str, temperature: float) -> str:
         """
-        Generation d'une recette via le modele.
-        Utilise GPT-2 fine-tune si disponible, sinon generation par template.
+        Generation d'une recette via Gemini API.
+
+        Le prompt est envoye en anglais (precision du modele), la reponse est
+        traduite en francais avant d'etre retournee a l'utilisateur.
+        Fallback automatique vers template si GEMINI_API_KEY absente ou erreur réseau.
         """
         try:
-            return self._generate_with_model(query, context, temperature)
+            generated_en = self._generate_with_model(query, context, temperature)
+            return self.translator.to_french(generated_en)
         except Exception as e:
             logger.warning("Generation modele echouee (%s), fallback template.", e)
             return self._generate_template(query, context)
 
     def _generate_with_model(self, query: str, context: str, temperature: float) -> str:
-        """Generation via transformers pipeline (GPT-2 fine-tune ou autre modele local)."""
-        from transformers import pipeline as hf_pipeline
+        """Generation via Gemini API (SDK google-genai, modele GEMINI_MODEL).
 
+        Le client est cache dans _generation_client_cache (singleton process-level)
+        pour eviter de le recreer a chaque appel. La temperature est passee dans
+        la config de generation car elle peut varier par requete.
+
+        Pre-requis : variable d'environnement GEMINI_API_KEY (fichier .env accepte).
+        """
+        import os
+        try:
+            from google import genai
+            from google.genai import types as genai_types
+        except ImportError as exc:
+            raise ImportError(
+                "google-genai manquant : pip install google-genai"
+            ) from exc
+
+        # Charger .env si present (python-dotenv deja dans requirements.txt)
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except ImportError:
+            pass
+
+        api_key = os.getenv("GEMINI_API_KEY", "")
+        if not api_key:
+            raise RuntimeError(
+                "GEMINI_API_KEY non definie. Creer .env avec GEMINI_API_KEY=<votre_cle>."
+            )
+
+        # Lazy-init : creer le client une seule fois par processus
+        if "client" not in _generation_client_cache:
+            _generation_client_cache["client"] = genai.Client(api_key=api_key)
+
+        client = _generation_client_cache["client"]
+
+        # Prompt entierement en anglais : la requete et le contexte RAG sont
+        # deja normalises EN, et Gemini est plus precis sur un prompt anglais.
+        # La reponse est traduite en FR par _generate avant affichage.
         prompt = (
-            f"Sur la base de ces cocktails de reference :\n{context}\n\n"
-            f"Cree une nouvelle recette de cocktail correspondant a : {query}\n\n"
-            f"Recette proposee :\nNom : "
+            f"You are an expert mixologist. Create an original and creative "
+            f"cocktail recipe.\n\n"
+            f"Reference cocktails (use them as inspiration):\n{context}\n\n"
+            f"Request: {query}\n\n"
+            f"Generate a complete recipe with:\n"
+            f"- Cocktail name\n"
+            f"- Ingredients with precise measurements\n"
+            f"- Step-by-step instructions\n"
+            f"- Tasting note (1 sentence)"
         )
-        generator = hf_pipeline("text-generation", model="gpt2", max_new_tokens=200, temperature=temperature)
-        output = generator(prompt, return_full_text=False)[0]["generated_text"]
-        return output.strip()
+
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                temperature=temperature,
+                max_output_tokens=1000,
+            ),
+        )
+        if not response.text:
+            raise RuntimeError("Reponse Gemini vide (filtre de securite ou quota).")
+        return response.text.strip()
 
     def _generate_template(self, query: str, context: str) -> str:
         """Fallback : generation par template si le modele n'est pas disponible."""

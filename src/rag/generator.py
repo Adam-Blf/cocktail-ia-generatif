@@ -12,7 +12,9 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-MODEL_DIR = Path(__file__).parent.parent / "models" / "gpt2-cocktails"
+# Modeles a la racine projet (generator.py vit dans src/rag/, 3 niveaux sous
+# la racine). Utilise uniquement si un fine-tune local est entraine via train().
+MODEL_DIR = Path(__file__).resolve().parent.parent.parent / "models" / "gpt2-cocktails"
 
 
 class CocktailGenerator:

@@ -24,6 +24,9 @@ nltk==3.8.1
 # UI
 streamlit==1.35.0
 
+# Generation IA (Gemini API, SDK officiel)
+google-genai>=1.0.0
+
 # Utils
 tqdm==4.66.4
 python-dotenv==1.0.1

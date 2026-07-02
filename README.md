@@ -68,7 +68,7 @@ Requete utilisateur (langage naturel)
 
 - **NLP / Embeddings** : sentence-transformers (SBERT all-MiniLM-L6-v2, 384 dims)
 - **Retrieval** : FAISS (IndexFlatIP)
-- **Generation** : pipeline RAG + modele generatif (GPT-2 fine-tune)
+- **Generation** : pipeline RAG + Gemini API (gemini-2.5-flash), fallback template hors-ligne
 - **Data** : Pandas, NumPy, scikit-learn
 - **Visualisation** : Matplotlib, Seaborn, Plotly
 - **UI** : Streamlit
@@ -83,6 +83,17 @@ git clone https://github.com/Adam-Blf/cocktail-ia-generatif.git
 cd cocktail-ia-generatif
 pip install -r requirements.txt
 ```
+
+### Configurer la cle Gemini (generation de recettes)
+
+```bash
+# Copier le template et renseigner la cle (https://aistudio.google.com/app/apikey)
+cp .env.example .env
+# .env -> GEMINI_API_KEY=<votre_cle>
+```
+
+Sans cle, la generation bascule automatiquement sur un mode template hors-ligne
+(la recommandation semantique fonctionne dans tous les cas).
 
 ### Telecharger les datasets Kaggle
 
@@ -111,12 +122,17 @@ cocktail-ia-generatif/
 │   ├── 05_rag_pipeline.ipynb              # FAISS + RAG
 │   └── 06_evaluation.ipynb               # Ablation study
 ├── src/
-│   ├── data_loader.py      # Chargement et fusion datasets
-│   ├── embeddings.py       # SBERT wrapper + cache
-│   ├── recommender.py      # Moteur de recommandation
-│   ├── generator.py        # Pipeline de generation
-│   ├── rag_pipeline.py     # RAG complet (retrieval + generation)
-│   └── evaluation.py       # Metriques (BLEU, ROUGE, Precision@K)
+│   ├── data/
+│   │   └── data_loader.py  # Chargement et fusion datasets
+│   ├── nlp/
+│   │   ├── embeddings.py   # SBERT wrapper + cache disque
+│   │   └── translator.py   # Detection langue + traduction EN
+│   ├── rag/
+│   │   ├── recommender.py  # Moteur de recommandation semantique
+│   │   ├── rag_pipeline.py # RAG complet (guardrail + retrieval + Gemini)
+│   │   └── generator.py    # Fine-tuning GPT-2 local (module d'etude)
+│   └── eval/
+│       └── evaluation.py   # Metriques (BLEU, ROUGE, Precision@K)
 ├── app/
 │   └── app.py              # Interface Streamlit 3 onglets
 ├── tests/                  # Tests pytest

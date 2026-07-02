@@ -15,7 +15,10 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-CACHE_DIR = Path(__file__).parent.parent / ".cache"
+# Cache a la racine projet (embeddings.py vit dans src/nlp/, 3 niveaux sous
+# la racine). C'est la que vivent les caches pre-calcules du corpus reel :
+# pointer ailleurs forcerait un re-encodage SBERT complet (~20s) au demarrage.
+CACHE_DIR = Path(__file__).resolve().parent.parent.parent / ".cache"
 CACHE_DIR.mkdir(exist_ok=True)
 
 DEFAULT_MODEL = "all-MiniLM-L6-v2"

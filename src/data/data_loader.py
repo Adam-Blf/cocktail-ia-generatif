@@ -19,8 +19,13 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-DATA_RAW = Path(__file__).parent.parent / "data" / "raw"
-DATA_PROCESSED = Path(__file__).parent.parent / "data" / "processed"
+# Racine projet : data_loader.py vit dans src/data/, il faut donc remonter
+# 3 niveaux (data -> src -> racine). Un .parent manquant ferait pointer
+# vers src/data/raw (inexistant) et basculerait silencieusement sur les
+# donnees synthetiques au lieu du vrai corpus de 1280 cocktails.
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+DATA_RAW = _PROJECT_ROOT / "data" / "raw"
+DATA_PROCESSED = _PROJECT_ROOT / "data" / "processed"
 
 FLAVOR_KEYWORDS: dict[str, list[str]] = {
     "sweet": ["sugar", "syrup", "liqueur", "triple sec", "grenadine", "honey", "creme", "baileys", "amaretto", "kahlua"],
