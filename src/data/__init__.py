@@ -1,3 +1,3 @@
-from .data_loader import CocktailDataLoader, load_all_datasets
+from .data_loader import load_all_datasets
 
-__all__ = ["CocktailDataLoader", "load_all_datasets"]
+__all__ = ["load_all_datasets"]

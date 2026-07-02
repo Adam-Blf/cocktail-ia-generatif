@@ -47,6 +47,21 @@ def _translate_cached(text: str) -> str:
         return text
 
 
+@lru_cache(maxsize=256)
+def _translate_to_french_cached(text: str) -> str:
+    """
+    Traduit vers le francais via GoogleTranslator (deep_translator).
+    Utilise pour rendre les generations Gemini (anglais) lisibles par
+    l'utilisateur final. Fallback silencieux sur le texte original.
+    """
+    try:
+        from deep_translator import GoogleTranslator
+        return GoogleTranslator(source="auto", target="fr").translate(text)
+    except Exception as exc:
+        logger.warning("FR translation failed (%s), using original text.", exc)
+        return text
+
+
 class QueryTranslator:
     """
     Traduit les requetes utilisateur vers l'anglais avant embeddings.
@@ -92,3 +107,19 @@ class QueryTranslator:
         """Variante simple qui retourne uniquement le texte traduit."""
         translated, _ = self.to_english(query)
         return translated
+
+    def to_french(self, text: str) -> str:
+        """
+        Traduit un texte vers le francais pour l'affichage utilisateur.
+
+        Utilise en sortie de generation : le prompt Gemini est en anglais
+        (meilleure precision du modele), la reponse est traduite en FR
+        avant d'etre montree. GoogleTranslator accepte jusqu'a ~5000
+        caracteres, largement au-dela d'une recette (<1500).
+        Fallback silencieux : retourne le texte original si echec reseau.
+        """
+        if not self.enabled or not text.strip():
+            return text
+        if _detect_lang(text) == "fr":
+            return text
+        return _translate_to_french_cached(text)
