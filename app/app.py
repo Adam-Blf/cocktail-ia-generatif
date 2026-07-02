@@ -418,6 +418,53 @@ st.markdown("""
   /* ---- Supprime le spinner "Made with Streamlit" ---- */
   .viewerBadge_container__r5tak,
   [data-testid="stStatusWidget"] { display: none !important; }
+
+  /* ==== Passe qualite UX (audit ui-ux-pro-max) ==================== */
+
+  /* Accessibilite clavier · focus visible sur tout l'interactif */
+  button:focus-visible,
+  [role="tab"]:focus-visible,
+  [data-testid="stExpander"] summary:focus-visible,
+  a:focus-visible {
+    outline: 3px solid rgba(12,120,180,0.55) !important;
+    outline-offset: 2px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Affordance curseur */
+  button, [role="tab"], [role="option"],
+  [data-testid="stExpander"] summary,
+  [data-testid="stSelectbox"] > div > div { cursor: pointer !important; }
+
+  /* Feedback presse (scale subtil, ne decale pas le layout) */
+  button[kind="primary"]:active,
+  button[kind="secondary"]:active {
+    transform: scale(0.98) !important;
+    box-shadow: 0 2px 8px rgba(22,55,103,0.25) !important;
+  }
+
+  /* Entrees animees · header puis cards en stagger */
+  @keyframes mc-fade-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .mc-header { animation: mc-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) both; }
+  .cocktail-card, .recipe-card, .metric-card {
+    animation: mc-fade-up 0.4s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .cocktail-card:nth-child(2) { animation-delay: 40ms; }
+  .cocktail-card:nth-child(3) { animation-delay: 80ms; }
+  .cocktail-card:nth-child(4) { animation-delay: 120ms; }
+  .cocktail-card:nth-child(5) { animation-delay: 160ms; }
+
+  /* Respect des preferences systeme · aucune animation imposee */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -431,6 +478,24 @@ def get_system():
     rec.fit(df)
     rag = RAGPipeline(recommender=rec, engine=engine)
     return df, rec, rag
+
+
+# ---------- Rendu recette generee ----------
+def recipe_to_html(text: str) -> str:
+    """Convertit la recette Gemini (markdown leger) en HTML sur pour la card.
+
+    1. Echappe le HTML (le texte vient d'un modele externe · anti-XSS).
+    2. Convertit **gras** en <strong> et les sauts de ligne en <br>
+       (sinon les asterisques markdown s'affichent bruts dans la div).
+    """
+    import html as _html
+    import re as _re
+
+    safe = _html.escape(text)
+    safe = _re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", safe)
+    safe = _re.sub(r"^[-*]\s+", "&bull; ", safe, flags=_re.MULTILINE)
+    safe = safe.replace("\n", "<br>")
+    return safe
 
 
 # ---------- Radar chart ----------
@@ -487,7 +552,17 @@ st.markdown("""
 
   <div style="position: relative; z-index: 1;">
     <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 0.6rem;">
-      <span style="font-size: 2.2rem; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));">&#127379;</span>
+      <!-- Verre a cocktail en SVG inline (pas d'emoji comme icone structurelle) -->
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+           style="filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35)); flex-shrink: 0;"
+           role="img" aria-label="Verre a cocktail">
+        <path d="M4 3h16l-8 9z"/>
+        <path d="M12 12v6"/>
+        <path d="M8 21h8"/>
+        <path d="M7.5 7h9" stroke="#FF43B8" stroke-width="1.8"/>
+        <circle cx="17" cy="4.5" r="1.6" fill="#0C78B4" stroke="none"/>
+      </svg>
       <h1 style="
         color: #fff;
         margin: 0;
@@ -533,7 +608,7 @@ st.markdown("""
         font-weight: 500;
       ">M1 Data Engineering & IA</span>
       <span style="
-        color: rgba(255,255,255,0.45);
+        color: rgba(255,255,255,0.72);
         font-size: 0.75rem;
         font-family: 'Inter', sans-serif;
       ">Adam Beloucif &amp; Emilien Morice</span>
@@ -662,7 +737,7 @@ with tab_gen:
                     st.markdown("#### Recette generee")
                     st.markdown(f"""
                     <div class="recipe-card">
-                    {result['generated_recipe'].replace(chr(10), '<br>')}
+                    {recipe_to_html(result['generated_recipe'])}
                     </div>
                     """, unsafe_allow_html=True)
 
