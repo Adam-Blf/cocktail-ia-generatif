@@ -27,28 +27,19 @@ L'approche combine analyse semantique (SBERT), similarite cosinus, pipeline RAG 
 
 ## Architecture
 
-```
-Requete utilisateur (langage naturel)
-        |
-        v
-[Guardrail semantique - seuil 0.40]
-        |
-        +-- hors-domaine --> refus explicite
-        |
-        v
-[Embeddings SBERT all-MiniLM-L6-v2]
-        |
-        v
-[Retrieval FAISS - Top-K cocktails similaires]
-        |
-        v
-[RAG - contexte injecte dans le prompt]
-        |
-        v
-[Generation - recette personnalisee]
-        |
-        v
-[Cache MD5 - evite les regenerations]
+```mermaid
+flowchart TD
+    Q["Requete utilisateur<br/>langage naturel"]
+    G["Guardrail semantique<br/>seuil 0.40"]
+    R1["Refus explicite"]
+    E["Embeddings SBERT<br/>all-MiniLM-L6-v2"]
+    F["Retrieval FAISS<br/>Top-K cocktails similaires"]
+    RAG["RAG<br/>contexte injecte dans le prompt"]
+    GEN["Generation<br/>recette personnalisee"]
+    C["Cache MD5<br/>evite les regenerations"]
+    Q --> G
+    G -- hors domaine --> R1
+    G -- dans le domaine --> E --> F --> RAG --> GEN --> C
 ```
 
 ---
