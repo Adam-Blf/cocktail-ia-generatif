@@ -1,5 +1,7 @@
 # MixCraft - Systeme Generatif Intelligent pour la Creation de Cocktails
 
+[![version](https://img.shields.io/badge/version-0.1.0-000091?style=flat-square)](https://github.com/Adam-Blf/cocktail-ia-generatif/releases)
+
 <!-- adam-badges:start -->
 [![commits](https://img.shields.io/github/commit-activity/t/Adam-Blf/cocktail-ia-generatif?color=001329&label=commits&style=flat-square)](https://github.com/Adam-Blf/cocktail-ia-generatif/commits)
 [![visites](https://hits.sh/github.com/Adam-Blf/cocktail-ia-generatif.svg?style=flat-square&label=visites&color=001329)](https://hits.sh/github.com/Adam-Blf/cocktail-ia-generatif/)
